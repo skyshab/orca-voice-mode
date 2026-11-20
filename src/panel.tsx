@@ -1,6 +1,6 @@
 // Voice controls: the same commands as the `voice` terminal command, as buttons and switches.
 import {
-  atom, Badge, Button, Card, Code, Heading, plugin, read, Row, Select, set, Slider, Stack, Switch, Text,
+  atom, Badge, Button, Card, Code, Heading, plugin, read, Row, Select, set, Slider, Stack, Switch, Text, update,
   type PanelContext
 } from 'orca'
 import type { VoiceStatus } from './protocol'
@@ -18,10 +18,15 @@ async function choose(v: string): Promise<void> {
   return run('mode local')
 }
 
-async function setInputVolume(value: number): Promise<void> {
-  const cur = read(state)
-  if (cur) set(state, { ...cur, inputVolume: value })  // move the slider at once, the Mac catches up
-  set(state, await plugin.request('voice.inputVolume', { value }))
+let volumeTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Moves the slider at once, then sends the final position once the drag settles. */
+function setInputVolume(value: number): void {
+  update(state, (cur) => (cur ? { ...cur, inputVolume: value } : cur))
+  if (volumeTimer) clearTimeout(volumeTimer)
+  volumeTimer = setTimeout(() => {
+    void plugin.request('voice.inputVolume', { value }).then((v) => set(state, v))
+  }, 120)
 }
 
 async function runSetup(): Promise<void> {
@@ -159,7 +164,7 @@ export default function Panel() {
               max={100}
               step={1}
               showValue
-              onChange={(v) => void setInputVolume(v)}
+              onChange={(v) => setInputVolume(v)}
             />
           ) : (
             <Text muted size="xs">This microphone has no volume control.</Text>

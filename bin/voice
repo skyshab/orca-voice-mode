@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Control the voice helper. Uses only the standard library, so it starts instantly.
+
+  voice start              start the helper in the background (once)
+  voice status             show mode, speech-to-text model, mute state and the session being followed
+  voice mode local|wispr   choose how your voice gets in
+  voice stt parakeet|whisper
+  voice key NAME           talk key: f18 (default, pairs with Karabiner), cmd_r, alt_r or ctrl_r (restart to apply)
+  voice cue NAME           start sound for dictation: Tink, Pop, Morse, Bottle, Funk... (plays it)
+  voice silence SECONDS|off  auto-stop a double-tap recording after this much quiet (default 3)
+  voice conversation on|off  hands-free: after each spoken reply the mic reopens by itself (off after a restart)
+  voice listen             open one listening turn now, as a double-tap would
+  voice mic NAME|default   which microphone to record from (default: follow the system's current input)
+  voice speed X            how fast the voice talks: 1.0 is normal (default 1.15)
+  voice speaker NAME       af_heart, af_bella, af_nicole, bf_emma or am_michael
+  voice pause on|off       pause other audio (music, video) while you dictate (default on)
+  voice playing            say whether other audio is playing right now
+  voice limit N            longest reply to read aloud, in words (default 300)
+  voice enter on|off       press Enter after pasting local dictation (default off)
+  voice mute | unmute | stop
+  voice setup              install what the helper needs (once, takes a few minutes)
+  voice doctor             check the macOS permissions and tools the helper needs
+  voice logs               show the helper's recent output
+  voice quit               stop the helper
+"""
+import os
+import shutil
+import socket
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # the package folder, one above bin/
+HELPER = os.path.join(ROOT, "helper")
+DATA = os.path.expanduser("~/.voice-bridge")
+SOCK = os.path.join(DATA, "control.sock")
+LOG = os.path.join(DATA, "voice.log")
+
+
+def find_uv():
+    return shutil.which("uv") or next((p for p in ("/opt/homebrew/bin/uv", "/usr/local/bin/uv", os.path.expanduser("~/.local/bin/uv"))
+                                       if os.path.exists(p)), None)
+
+
+def ask(line, timeout=20):
+    s = socket.socket(socket.AF_UNIX)
+    s.settimeout(timeout)
+    s.connect(SOCK)
+    s.sendall((line + "\n").encode())
+    out = b""
+    while chunk := s.recv(4096):
+        out += chunk
+    return out.decode().strip()
+
+
+def running():
+    try:
+        return ask("ping", 2) == "pong"
+    except OSError:
+        return False
+
+
+def main(args):
+    if not args or args[0] in ("-h", "--help", "help"):
+        print(__doc__)
+    elif args[0] == "start":
+        if running():
+            print("Already running.")
+            return
+        uv = find_uv()
+        if not uv or not os.path.isdir(os.path.join(HELPER, ".venv")):
+            sys.exit("The voice helper is not set up yet. Run: voice setup")
+        os.makedirs(DATA, exist_ok=True)
+        out = open(LOG, "a")
+        subprocess.Popen([uv, "run", "--project", HELPER, "python", "src/voiced.py", *args[1:]], cwd=HELPER, stdout=out, stderr=subprocess.STDOUT,
+                         stdin=subprocess.DEVNULL, start_new_session=True)
+        print("Starting (loading models takes about 30 seconds)...", flush=True)
+        for _ in range(90):
+            time.sleep(1)
+            if running():
+                print("Running.\n" + ask("status"))
+                return
+        print(f"Did not start. See {LOG}")
+        sys.exit(1)
+    elif args[0] == "setup":
+        sys.exit(subprocess.call(["/bin/bash", os.path.join(ROOT, "scripts", "setup.sh")]))
+    elif args[0] == "doctor" and running():
+        print(ask("doctor"))
+    elif args[0] == "doctor":
+        uv = find_uv()
+        if not uv:
+            sys.exit("uv is not installed. Run: voice setup")
+        sys.exit(subprocess.call([uv, "run", "--project", HELPER, "python", os.path.join(ROOT, "scripts", "check_permissions.py")]))
+    elif args[0] == "logs":
+        subprocess.run(["tail", "-n", "30", LOG])
+    else:
+        if not running():
+            if args[:2] == ["mode", "wispr"] or args[0] == "quit":
+                # Safety valve: give right Option back to Wispr Flow even if the helper is not running.
+                cli = "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
+                if os.path.exists(cli):
+                    subprocess.run([cli, "--set-variables", '{"voice_local":0}'])
+                print("The helper is not running. Right Option is back with Wispr Flow.")
+                return
+            sys.exit("The voice helper is not running. Start it with: voice start")
+        print(ask(" ".join(args)))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

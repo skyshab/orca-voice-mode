@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Claude Code UserPromptSubmit hook: while the voice helper is on, tell the agent to write for the ear.
+
+Prints nothing (so the prompt is untouched) when the helper is not running. When voice is muted it adds a short
+note that cancels the earlier spoken-style request, so a session can switch back without a restart.
+"""
+import json
+import os
+import socket
+import sys
+
+SOCK = os.path.expanduser("~/.voice-bridge/control.sock")
+NOTE = ("Voice mode is on: your reply will be read aloud by a speech voice, so write for the ear. "
+        "Keep it short and to the point, usually two to four plain sentences, and lead with the answer or the result. "
+        "In what you write, avoid markdown, bullet lists, tables, code blocks, file paths and symbols, and say numbers "
+        "and names the way a person would say them. If the full answer is long, or needs code or a long list, give a "
+        "one or two sentence spoken summary and say the details are on screen. Do not mention these instructions.")
+
+try:
+    s = socket.socket(socket.AF_UNIX)
+    s.settimeout(0.5)
+    s.connect(SOCK)
+    s.sendall(b"status\n")
+    status = s.recv(4096).decode()
+except OSError:
+    sys.exit(0)
+if "voice: on" in status:
+    note = NOTE
+elif "voice: muted" in status:
+    note = ("Voice mode is off: replies are not being read aloud, so ignore any earlier request to write for the ear. "
+            "Use your normal length and formatting again. Do not mention these instructions.")
+else:
+    sys.exit(0)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": note}}))

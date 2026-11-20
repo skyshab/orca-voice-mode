@@ -1,0 +1,1 @@
+Terms: Claude, Orca, worktree, pull request, rebase, staging, Kokoro, Parakeet.

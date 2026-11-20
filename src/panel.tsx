@@ -1,6 +1,6 @@
 // Voice controls: the same commands as the `voice` terminal command, as buttons and switches.
 import {
-  atom, Badge, Button, Card, Code, Heading, plugin, read, Row, Select, set, Stack, Switch, Text,
+  atom, Badge, Button, Card, Code, Heading, plugin, read, Row, Select, set, Slider, Stack, Switch, Text,
   type PanelContext
 } from 'orca'
 import type { VoiceStatus } from './protocol'
@@ -16,6 +16,12 @@ async function choose(v: string): Promise<void> {
   if (v === 'wispr') return run('mode wispr')
   await run(`stt ${v}`)
   return run('mode local')
+}
+
+async function setInputVolume(value: number): Promise<void> {
+  const cur = read(state)
+  if (cur) set(state, { ...cur, inputVolume: value })  // move the slider at once, the Mac catches up
+  set(state, await plugin.request('voice.inputVolume', { value }))
 }
 
 async function runSetup(): Promise<void> {
@@ -145,6 +151,20 @@ export default function Panel() {
             ]}
             onChange={(v) => void chooseKey(v)}
           />
+          {s.inputVolume >= 0 ? (
+            <Slider
+              label="Microphone volume"
+              value={s.inputVolume}
+              min={0}
+              max={100}
+              step={1}
+              showValue
+              onChange={(v) => void setInputVolume(v)}
+            />
+          ) : (
+            <Text muted size="xs">This microphone has no volume control.</Text>
+          )}
+          <Text muted size="xs">Input: {s.inputDevice || 'unknown'}</Text>
           <Button disabled={!local} onPress={() => void run('listen')}>Start dictation</Button>
         </Stack>
       </Card>

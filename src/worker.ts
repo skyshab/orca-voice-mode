@@ -1,6 +1,6 @@
 // Talks to the voice helper over its control socket (~/.voice-bridge/control.sock), the same
 // one the `voice` command uses. The worker runs as a normal Node process, so it can open it.
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import net from 'node:net'
@@ -11,7 +11,7 @@ import type { VoiceStatus } from './protocol'
 
 const SOCK = path.join(os.homedir(), '.voice-bridge', 'control.sock')
 const DOWN: VoiceStatus = {
-  up: false, phase: '', needsSetup: false, note: '', hook: false, key: '', mode: '', stt: '', voice: '', speed: '', speaker: '', mic: '', conversation: '',
+  up: false, phase: '', needsSetup: false, note: '', hook: false, inputVolume: -1, inputDevice: '', key: '', mode: '', stt: '', voice: '', speed: '', speaker: '', mic: '', conversation: '',
   silence: '', enter: '', pause: '', following: ''
 }
 
@@ -38,6 +38,8 @@ export function parse(text: string): VoiceStatus {
     needsSetup: false,
     note: '',
     hook: false,
+    inputVolume: -1,
+    inputDevice: '',
     key: get('talk key'),
     mode: get('mode'),
     stt: get('speech-to-text'),
@@ -116,7 +118,36 @@ export function setHook(enable: boolean): void {
   fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2) + '\n')
 }
 
+function run1(cmd: string, args: string[]): Promise<string> {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { timeout: 5000 }, (err, stdout) => resolve(err ? '' : String(stdout).trim()))
+  })
+}
+
+/** The Mac's current input device and its volume. The volume is -1 when the device has none (AppleScript says "missing value"). */
+async function readInput(): Promise<{ inputVolume: number; inputDevice: string }> {
+  const [vol, profile] = await Promise.all([
+    run1('/usr/bin/osascript', ['-e', 'input volume of (get volume settings)']),
+    run1('/usr/sbin/system_profiler', ['SPAudioDataType', '-json'])
+  ])
+  let inputDevice = ''
+  try {
+    const items = JSON.parse(profile).SPAudioDataType?.[0]?._items ?? []
+    inputDevice = items.find((i: Record<string, string>) => i.coreaudio_default_audio_input_device === 'spaudio_yes')?._name ?? ''
+  } catch {
+    // keep the empty name
+  }
+  const n = Number(vol)
+  return { inputVolume: vol !== '' && Number.isFinite(n) ? n : -1, inputDevice }
+}
+
 async function status(): Promise<VoiceStatus> {
+  const input = await readInput()
+  const s = await helperStatus()
+  return { ...s, ...input }
+}
+
+async function helperStatus(): Promise<VoiceStatus> {
   try {
     return { ...parse(await ask('status')), phase: '', hook: hookInstalled() }
   } catch {
@@ -193,6 +224,14 @@ export default function activate(orca: OrcaWorkerApi): void {
   }
 
   orca.panels.handle('voice.status', async () => {
+    const s = await status()
+    publish(s)
+    return s
+  })
+
+  orca.panels.handle('voice.inputVolume', async ({ value }) => {
+    const v = Math.max(0, Math.min(100, Math.round(Number(value))))
+    if (Number.isFinite(v)) await run1('/usr/bin/osascript', ['-e', `set volume input volume ${v}`])
     const s = await status()
     publish(s)
     return s

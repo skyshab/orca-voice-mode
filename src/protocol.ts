@@ -10,6 +10,10 @@ export type VoiceStatus = {
   note: string
   /** Whether Claude Code's settings carry the voice hook (short spoken-style replies while voice is on). */
   hook: boolean
+  /** The Mac's input volume (0 to 100) for the current input device, or -1 when that device has no volume control. */
+  inputVolume: number
+  /** The name of the current input device. */
+  inputDevice: string
   /** The talk key: f18, cmd_r, alt_r or ctrl_r. */
   key: string
   /** Set while a start, stop or restart is under way. */
@@ -33,6 +37,8 @@ declare module 'orca' {
     'voice.status': { output: VoiceStatus }
     /** Starts, stops or restarts the helper process. Answers at once; the state follows through `voice.changed`. */
     'voice.helper': { input: { action: 'start' | 'stop' | 'restart' }; output: VoiceStatus }
+    /** Sets the Mac's input volume (0 to 100) for the current input device. */
+    'voice.inputVolume': { input: { value: number }; output: VoiceStatus }
     /** Adds or removes the voice hook in Claude Code's user settings (the file is backed up first). */
     'voice.hook': { input: { enable: boolean }; output: VoiceStatus }
     /** The helper's own check of what macOS and the machine allow (it must be running). */

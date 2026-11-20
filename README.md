@@ -16,14 +16,12 @@ Claude session you are working in.
 
 ## Install
 
-1. Get this folder (clone the repository).
-2. In Orca, load it as a plugin: `orca plugin install <path or repository URL>`, then approve it. Orca lists
-   what it can do: run code as you, and read your workspaces and agent status (used to follow the workspace you
-   are working in).
-3. Open the **Voice Mode** panel in Orca's right sidebar and press **Run setup**. It installs the tools, builds a
-   Python environment and downloads the speech models. This takes a few minutes. You can also run
-   `./scripts/setup.sh` in a terminal.
-4. Press **Start**. The first start takes about half a minute while the models load.
+1. In a terminal, run `orca plugin install skyshab/orca-voice-mode`. It stops and lists the access the plugin
+   asks for: it can run code as you, and read your workspaces and agent status (used to follow the workspace you
+   are working in). If that is fine, re-run the command with the `--approve` value it prints.
+2. Open the **Voice Mode** panel in Orca's right sidebar and press **Run setup**. It installs the tools, builds a
+   Python environment and downloads the speech models. This takes a few minutes.
+3. Press **Start**. The first start takes about half a minute while the models load.
 
 ## Permissions macOS asks for
 

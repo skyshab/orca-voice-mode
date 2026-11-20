@@ -12,7 +12,7 @@ Claude session you are working in.
   Linux are not supported.
 - [Orca](https://github.com/stablyai/orca) with plugin support (1.4.246 or newer) and Claude Code.
 - [Homebrew](https://brew.sh). Setup uses it to install `uv` and `ffmpeg` if they are missing.
-- About 2 GB of free space and an internet connection for the first setup.
+- About 6 GB of free space (setup uses about 4 GB, and the optional Whisper model adds about 1.5 GB) and an internet connection for the first setup.
 
 ## Install
 
@@ -22,6 +22,39 @@ Claude session you are working in.
 2. Open the **Voice Mode** panel in Orca's right sidebar and press **Run setup**. It installs the tools, builds a
    Python environment and downloads the speech models. This takes a few minutes.
 3. Press **Start**. The first start takes about half a minute while the models load.
+
+## What setup installs
+
+Setup (the panel's **Run setup** button, which runs `scripts/setup.sh`) is safe to run again. It asks before it
+installs anything with Homebrew.
+
+| What | Used for | Size | Where it goes |
+|---|---|---|---|
+| `uv` (Homebrew) | Builds and runs the Python helper. | small | Homebrew |
+| `ffmpeg` (Homebrew) | Its `ffplay` plays the spoken replies. | about 0.1 GB, plus its dependencies | Homebrew |
+| Python 3.12 and packages | The helper, plus the MLX speech libraries. `uv` fetches Python itself. | about 1.4 GB | `helper/.venv` in the plugin folder |
+| Kokoro (`Kokoro-82M`) | The voice that reads replies aloud. | about 0.3 GB | Hugging Face cache, `~/.cache/huggingface` |
+| A small spaCy English model | Kokoro uses it to split text into words. It downloads from GitHub on first use. | about 15 MB | `helper/.venv` |
+| Parakeet (`parakeet-tdt-0.6b-v2`) | Local dictation (the default). | about 2.3 GB | Hugging Face cache |
+| Whisper (`large-v3-turbo`) | Optional local dictation, better with unusual words. It downloads the first time you choose it. | about 1.5 GB | Hugging Face cache |
+
+Setup also links the `voice` and `voice-hook` commands into `~/.local/bin`. Add that folder to your `PATH` if you
+want to use `voice` in a terminal. Setup does not touch Karabiner-Elements or your Claude Code settings.
+
+## If setup fails
+
+The panel shows the last lines of the setup log, and the full log is in `~/.voice-bridge/setup.log`. The usual
+causes are no internet connection, no Homebrew, or too little disk space. You can also do each step by hand,
+from the plugin folder:
+
+1. Install the tools: `brew install uv ffmpeg`.
+2. Build the Python environment: `cd helper && uv sync`.
+3. Download the models: `uv run python src/fetch_models.py` (still in `helper`).
+4. Link the commands: `ln -sfn "$PWD/../bin/voice" ~/.local/bin/voice` and the same for `voice-hook`.
+5. Start the helper: `voice start`, then run `voice doctor`.
+
+If a model download stops halfway, run step 3 again. It picks up where it left off. To free the space later,
+delete `helper/.venv` and the model folders in `~/.cache/huggingface/hub` (their names start with `models--mlx-community`).
 
 ## Permissions macOS asks for
 

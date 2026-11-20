@@ -64,7 +64,7 @@ export default function Panel() {
         </Row>
         <Text>
           Voice Mode needs a one-time setup: it installs a few tools, builds its Python environment and downloads the
-          speech models. This takes a few minutes and needs about 2 GB of space.
+          speech models. This takes a few minutes and needs about 4 GB of space.
         </Text>
         <Button disabled={s.phase === 'setting up'} onPress={() => void runSetup()}>Run setup</Button>
         {s.note ? <Code block>{s.note}</Code> : null}

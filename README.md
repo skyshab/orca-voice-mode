@@ -107,3 +107,7 @@ Remove the plugin in Orca, delete this folder and `~/.voice-bridge`, and delete 
 `src/` is the Orca panel and its worker (TypeScript, no build step). `helper/` is the Python helper that does the
 listening and speaking. The two talk over a local socket (`~/.voice-bridge/control.sock`). `orca plugin dev watch .`
 loads the plugin for development, and `orca plugin test .` runs the worker tests.
+
+## License
+
+MIT. See `LICENSE`. The speech models and libraries that setup downloads have their own licenses.

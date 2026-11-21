@@ -14,6 +14,7 @@ import argparse
 import json
 import math
 import os
+import re
 import socket
 import socketserver
 import subprocess
@@ -91,7 +92,7 @@ SOUNDS = "/System/Library/Sounds"
 tickd = {}
 
 
-def build_tick(name):
+def build_tick(name, out="start-sound.wav"):
     """Load a macOS system sound, mix it to identical left and right, and put a quarter second of silence
     in front. Bluetooth headphones can be slow to wake their audio path, and a sound that arrives
     mid-wake can reach only one ear. Returns the name actually used."""
@@ -105,11 +106,21 @@ def build_tick(name):
     mono = mono[: loud[-1] + 1][: int(sr * 0.8)]  # drop trailing silence, cap at 0.8s
     wave = np.concatenate([np.zeros(int(sr * 0.25)), mono])
     stereo = np.stack([wave, wave], axis=1).astype("float32")
-    path = os.path.expanduser("~/.voice-bridge/start-sound.wav")
+    path = os.path.expanduser("~/.voice-bridge/" + out)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     sf.write(path, stereo, sr)
-    tickd.update(path=path, secs=len(wave) / sr)
+    if out == "start-sound.wav":
+        tickd.update(path=path, secs=len(wave) / sr)
     return name
+
+
+def end_cue():
+    """The sound for ending a conversation by voice. It gets the same lead-in silence as the start sound,
+    or a Bluetooth headset swallows it."""
+    path = os.path.expanduser("~/.voice-bridge/end-sound.wav")
+    if not os.path.exists(path):
+        build_tick("Pop", "end-sound.wav")
+    subprocess.Popen(["afplay", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def tick():
@@ -263,6 +274,10 @@ def follow(talker):
             names[sid] = f"{a.get('workspace')}: {a.get('title')}"
             if sid not in last_state:  # first sighting: remember it, do not announce it
                 last_state[sid], last_msg[sid] = st, msg
+                if started and state.get("focus") and (a.get("worktreeId") or "").lower() == state["focus"]:
+                    # The focused workspace had no session when focus moved there; this is the one that just opened.
+                    state["current"], state["focus"] = sid, None
+                    say(f"now following: {names[sid]}")
                 if st == "working" and started:
                     state["current"], t_start[sid] = sid, time.monotonic()
                     stop_talking(talker)
@@ -306,6 +321,9 @@ def paste(text, press_enter):
 
 
 # --- local mode: hold a key, speak, release ---------------------------------------------------
+END_PHRASES = {"end conversation", "end the conversation", "that is all", "thats all", "thats it", "we are done", "were done", "stop listening", "goodbye"}
+
+
 def handle_audio(frames, voiced_secs=1.0):
     audio = np.concatenate(frames).reshape(-1)
     clips = os.path.expanduser("~/.voice-bridge/clips")  # keep the last few recordings so odd results can be inspected
@@ -333,6 +351,12 @@ def handle_audio(frames, voiced_secs=1.0):
         return
     say(f"you [{state['stt']}, {took:.2f}s]: {text}")
     log(event="heard", mode="local", stt=state["stt"], seconds=took, audio_seconds=len(audio) / SR, text=text)
+    if re.sub(r"[^a-z ]", "", text.lower()).strip() in END_PHRASES:
+        # Say one of these on its own to end this exchange. Conversation mode stays on for the next one.
+        conv["active"] = False
+        end_cue()
+        say("conversation ended by voice, Conversation mode is still on")
+        return
     try:
         paste(text, state["enter"])
     except Exception as e:
@@ -661,12 +685,13 @@ def command(line):
         else:
             return "focus failed"
         if not mine:
-            say(f"focus {arg}: no Claude session in that workspace")
+            state["focus"] = wid  # follow the first session that opens here
+            say(f"focus {arg}: no Claude session in that workspace yet, waiting for one")
         elif any(a["orcaSessionId"] == state["current"] for a in mine):
-            pass  # already following one of this workspace's sessions
+            state["focus"] = None  # already following one of this workspace's sessions
         else:
             pick = max(mine, key=lambda a: a.get("updatedAt", 0))["orcaSessionId"]
-            state["current"] = pick
+            state["current"], state["focus"] = pick, None
             speak.cancel()
             say(f"now following: {names.get(pick, pick)}")
     elif cmd == "doctor":

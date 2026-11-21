@@ -186,12 +186,12 @@ export default function Panel() {
           <Text muted size="xs">How replies are read to you</Text>
         </Stack>
         <Stack gap="md">
+          <Switch label="Spoken replies" checked={!muted} onChange={(on) => void run(on ? 'unmute' : 'mute')} />
           <Switch
-            label="Short spoken-style replies from agents"
+            label="Voice-friendly agent replies"
             checked={s.hook}
             onChange={(on) => void plugin.request('voice.hook', { enable: on }).then((v) => set(state, v))}
           />
-          <Switch label="Spoken replies" checked={!muted} onChange={(on) => void run(on ? 'unmute' : 'mute')} />
           <Select label="Voice" value={s.speaker} options={VOICES} onChange={(v) => void run(`speaker ${v}`)} />
           <Select label="Voice speed" value={speed} options={SPEEDS} onChange={(v) => void run(`speed ${v}`)} />
           <Button onPress={() => void run('stop')}>Shut up</Button>

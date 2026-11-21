@@ -79,7 +79,7 @@ one in System Settings, restart the helper.
   Wispr Flow, choose it and the helper only speaks replies.
 - **Spoken replies.** The voice reads the reply of the session you are working in. Talking, or pressing the
   panel's Shut up button, stops it.
-- **Agent replies written for the ear.** The "short spoken-style replies" switch adds a small hook to Claude
+- **Agent replies written for the ear.** The "Voice-friendly agent replies" switch adds a small hook to Claude
   Code. While voice is on, agents write short plain sentences. While you mute, they go back to normal.
 - **Pause other audio.** Dictation pauses music or video that is playing, as Wispr Flow can. It does not
   resume it.

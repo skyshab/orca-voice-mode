@@ -226,7 +226,7 @@ class Talker(threading.Thread):
             if state["muted"]:
                 continue
             try:
-                speak.speak(text)
+                speak.speak(text, on_first_sound=lambda t: say(f"first sound {t:.1f}s after the reply was handed over"))
             except Exception as e:  # keep the loop alive if audio hiccups
                 say(f"speech error: {e}")
             else:
@@ -249,6 +249,13 @@ def full_reply(sid, fallback):
         return fallback
 
 
+TERMINAL_SETTLE_SECS = 1.5  # how long a terminal session's latest message must stay unchanged before it is read
+
+
+def cur_is_terminal(sessions, sid):
+    return any(a["orcaSessionId"] == sid and a.get("kind") == "terminal" for a in sessions)
+
+
 def stop_talking(talker):
     talker.clear()
     speak.cancel()
@@ -257,6 +264,7 @@ def stop_talking(talker):
 def follow(talker):
     """Track every Claude session. The one that most recently started working is the one we follow."""
     last_state, last_msg, t_start = {}, {}, {}
+    pending = {}  # terminal session id -> (new message, when it first appeared)
     started = False
     while True:
         try:
@@ -301,6 +309,25 @@ def follow(talker):
                     say(f"reply from {names[sid]}" + (f" ({took:.1f}s)" if took else "") + f": {msg[:300]}")
                     log(event="reply", mode=state["mode"], session=names[sid], seconds=took, words=len(msg.split()))
                     talker.say(msg)
+            if a.get("kind") == "terminal" and st == "working" and msg and msg != last_msg[sid]:
+                # Orca often leaves a terminal session on "working" after its turn ends, so a new message is
+                # the only sign of a reply. Wait until the message stops changing, then read it.
+                if pending.get(sid, (None,))[0] != msg:
+                    pending[sid] = (msg, time.monotonic())
+                elif time.monotonic() - pending[sid][1] >= TERMINAL_SETTLE_SECS:
+                    last_msg[sid] = msg
+                    del pending[sid]
+                    cur = state["current"]
+                    if sid != cur and (last_state.get(cur) != "working" or cur_is_terminal(sessions, cur)):
+                        say(f"now following: {names[sid]}")
+                        state["current"] = cur = sid
+                    if sid == cur:
+                        msg = full_reply(sid, msg)
+                        say(f"reply from {names[sid]} (terminal, still working): {msg[:300]}")
+                        log(event="reply", mode=state["mode"], session=names[sid], seconds=None, words=len(msg.split()))
+                        talker.say(msg)
+            else:
+                pending.pop(sid, None)
             last_state[sid] = st
         time.sleep(0.4)
 

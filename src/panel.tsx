@@ -60,7 +60,7 @@ const VOICES = [
   { value: 'bf_emma', label: 'Emma (British woman)' },
   { value: 'am_michael', label: 'Michael (US man)' }
 ]
-const SILENCE = ['1.5', '2', '3', '4', '6'].map((v) => ({ value: v, label: `${v} seconds` }))
+const SILENCE = ['1', '1.2', '1.5', '2', '3', '4', '6'].map((v) => ({ value: v, label: `${v} seconds` }))
 
 export default function Panel() {
   const s = read(state)

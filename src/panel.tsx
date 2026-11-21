@@ -140,7 +140,7 @@ export default function Panel() {
             onChange={(v) => void run(`silence ${v}`)}
           />
           <Switch
-            label="Press Enter after dictation"
+            label="Auto submit when done speaking"
             checked={s.enter === 'yes'}
             disabled={!local}
             onChange={(on) => void run(`enter ${on ? 'on' : 'off'}`)}

@@ -158,11 +158,11 @@ export default function Panel() {
             onChange={(on) => void run(`pause ${on ? 'on' : 'off'}`)}
           />
           <Select
-            label="Talk key"
+            label="Dictation shortcut"
             value={s.key}
             disabled={!local}
             options={[
-              { value: 'f18', label: 'F18 (use with Karabiner)' },
+              { value: 'f18', label: 'F18' },
               { value: 'cmd_r', label: 'Right Command' },
               { value: 'alt_r', label: 'Right Option' },
               { value: 'ctrl_r', label: 'Right Control' }

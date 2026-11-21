@@ -96,7 +96,14 @@ export default function Panel() {
         <Button size="xs" variant="ghost" disabled={!s.up || busy} onPress={() => void helperAction('restart')}>Restart</Button>
         <Button size="xs" variant="ghost" disabled={!s.up} onPress={() => void checkPermissions()}>Check permissions</Button>
       </Row>
-      {read(doctor) ? <Code block>{read(doctor)}</Code> : null}
+      {read(doctor) ? (
+        <Stack gap="xs">
+          <Code block>{read(doctor)}</Code>
+          <Row justify="end">
+            <Button size="xs" variant="ghost" onPress={() => set(doctor, '')}>Dismiss</Button>
+          </Row>
+        </Stack>
+      ) : null}
       {busy ? <Text muted size="xs">Loading the speech models takes about 30 seconds.</Text> : null}
     </Stack>
   )

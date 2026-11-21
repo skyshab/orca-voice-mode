@@ -470,7 +470,7 @@ def run_hotkey(key_name):
         speak.wait_idle()  # an interrupted reply must release the audio device before the click plays
         pause_other_audio()
         tick()
-        time.sleep(tickd["secs"] + 0.1)  # let the sound finish before the mic opens
+        time.sleep(tickd["secs"] + 0.5)  # let the sound finish before the mic opens (AirPods swallow it if the mic opens too soon)
         with gate:
             if ui["gen"] != gen:
                 return  # a newer press took over (the second tap of a double tap)
@@ -573,7 +573,9 @@ def run_hotkey(key_name):
                     finish(f"{quiet:g}s of silence, sending")
                 elif quiet and rec["voiced_secs"] < 0.3 and now - rec["t0"] > 10:
                     conv["active"] = False
-                    finish("no speech heard, closing the microphone", discard=True)
+                    frames = list(rec["frames"])
+                    peak = float(np.abs(np.concatenate(frames)).max()) if frames else 0.0
+                    finish(f"no speech heard in {now - rec['t0']:.0f}s (loudest sound {peak:.3f}), closing the microphone", discard=True)
                 elif now - rec["t0"] > MAX_LATCHED:
                     finish(f"recording ran past {MAX_LATCHED} seconds, finishing it")
                 continue

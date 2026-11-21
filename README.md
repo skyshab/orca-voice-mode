@@ -83,7 +83,7 @@ one in System Settings, restart the helper.
   Code. While voice is on, agents write short plain sentences. While you mute, they go back to normal.
 - **Pause other audio.** Dictation pauses music or video that is playing, as Wispr Flow can. It does not
   resume it.
-- **Hands-free conversation.** After each spoken reply the microphone opens again by itself.
+- **Conversation mode.** Hands-free: after each spoken reply the microphone opens again by itself.
 
 Everything the panel does is also a `voice` command: `voice --help` lists them. Settings, logs and your recent
 recordings live in `~/.voice-bridge/`. To add names or jargon that Whisper should expect, put them in

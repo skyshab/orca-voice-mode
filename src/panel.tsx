@@ -139,7 +139,7 @@ export default function Panel() {
             onChange={(on) => void run(`enter ${on ? 'on' : 'off'}`)}
           />
           <Switch
-            label="Hands-free conversation"
+            label="Conversation mode"
             checked={s.conversation === 'armed'}
             disabled={!local}
             onChange={(on) => void run(`conversation ${on ? 'on' : 'off'}`)}

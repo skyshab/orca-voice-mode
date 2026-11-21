@@ -117,7 +117,7 @@ export default function Panel() {
       {header}
       <Box border radius="md" padding="sm" direction="column" gap="md">
         <Stack gap="xs">
-          <Heading level={3}>Dictation</Heading>
+          <Heading level={3}>Dictation (STT)</Heading>
           <Text muted size="xs">How your voice gets in</Text>
         </Stack>
         <Stack gap="md">
@@ -189,7 +189,7 @@ export default function Panel() {
 
       <Box border radius="md" padding="sm" direction="column" gap="md">
         <Stack gap="xs">
-          <Heading level={3}>Agent voice</Heading>
+          <Heading level={3}>Agent voice (TTS)</Heading>
           <Text muted size="xs">How replies are read to you</Text>
         </Stack>
         <Stack gap="md">

@@ -8,7 +8,7 @@
   voice key NAME           talk key: f18 (default, pairs with Karabiner), cmd_r, alt_r or ctrl_r (restart to apply)
   voice cue NAME           start sound for dictation: Tink, Pop, Morse, Bottle, Funk... (plays it)
   voice silence SECONDS|off  auto-stop a double-tap recording after this much quiet (default 3)
-  voice conversation on|off  hands-free: after each spoken reply the mic reopens by itself (off after a restart)
+  voice conversation on|off  hands-free: after each spoken reply the mic reopens by itself
   voice listen             open one listening turn now, as a double-tap would
   voice mic NAME|default   which microphone to record from (default: follow the system's current input)
   voice speed X            how fast the voice talks: 1.0 is normal (default 1.15)

@@ -52,13 +52,16 @@ def log(**kw):
         f.write(json.dumps(kw) + "\n")
 
 
+SAVED_KEYS = ("mode", "stt", "muted", "enter", "cue", "silence", "mic", "speed", "speaker", "pause", "key", "conversation")
+
+
 def load_settings():
-    """Restore mode, speech-to-text model, mute, auto-Enter and reply limit from the last run."""
+    """Restore every saved setting, including conversation mode, from the last run."""
     try:
         d = json.load(open(SETTINGS))
     except (OSError, ValueError):
         return
-    for k in ("mode", "stt", "muted", "enter", "cue", "silence", "mic", "speed", "speaker", "pause", "key"):
+    for k in SAVED_KEYS:
         if k in d:
             state[k] = d[k]
     speak.SPEED = state["speed"]
@@ -70,7 +73,7 @@ def load_settings():
 def save_settings():
     os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
     with open(SETTINGS, "w") as f:
-        json.dump({**{k: state[k] for k in ("mode", "stt", "muted", "enter", "cue", "silence", "mic", "speed", "speaker", "pause", "key")}, "limit": speak.MAX_WORDS}, f)
+        json.dump({**{k: state[k] for k in SAVED_KEYS}, "limit": speak.MAX_WORDS}, f)
 
 
 def sync_karabiner(local):
@@ -682,7 +685,7 @@ def command(line):
     elif cmd == "mic" and arg:
         state["mic"] = " ".join(parts[1:])  # a name or part of one, e.g. "studio display", or "default"
     elif cmd == "conversation" and arg in ("on", "off"):
-        state["conversation"] = arg == "on"  # not saved: it is always off after a restart
+        state["conversation"] = arg == "on"
         if not state["conversation"]:
             conv["active"] = False
     elif cmd == "listen":

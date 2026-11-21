@@ -109,7 +109,10 @@ export default function Panel() {
     <Stack gap="md">
       {header}
       <Box border radius="md" padding="sm" direction="column" gap="md">
-        <Heading level={3}>Dictation</Heading>
+        <Stack gap="xs">
+          <Heading level={3}>Dictation</Heading>
+          <Text muted size="xs">How your voice gets in</Text>
+        </Stack>
         <Stack gap="md">
           <Select
             label="Dictation"
@@ -178,7 +181,10 @@ export default function Panel() {
       </Box>
 
       <Box border radius="md" padding="sm" direction="column" gap="md">
-        <Heading level={3}>Agent voice</Heading>
+        <Stack gap="xs">
+          <Heading level={3}>Agent voice</Heading>
+          <Text muted size="xs">How replies are read to you</Text>
+        </Stack>
         <Stack gap="md">
           <Switch
             label="Short spoken-style replies from agents"

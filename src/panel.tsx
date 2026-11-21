@@ -1,6 +1,6 @@
 // Voice controls: the same commands as the `voice` terminal command, as buttons and switches.
 import {
-  atom, Badge, Button, Card, Code, Heading, plugin, read, Row, Select, set, Slider, Stack, Switch, Text, update,
+  atom, Badge, Box, Button, Code, Heading, plugin, read, Row, Select, set, Slider, Stack, Switch, Text, update,
   type PanelContext
 } from 'orca'
 import type { VoiceStatus } from './protocol'
@@ -91,10 +91,12 @@ export default function Panel() {
         </Badge>
       </Row>
       <Row gap="xs">
-        <Button disabled={s.up || busy} onPress={() => void helperAction('start')}>Start</Button>
-        <Button variant="ghost" disabled={!s.up || busy} onPress={() => void helperAction('stop')}>Stop</Button>
-        <Button variant="ghost" disabled={!s.up || busy} onPress={() => void helperAction('restart')}>Restart</Button>
+        <Button size="xs" disabled={s.up || busy} onPress={() => void helperAction('start')}>Start</Button>
+        <Button size="xs" variant="ghost" disabled={!s.up || busy} onPress={() => void helperAction('stop')}>Stop</Button>
+        <Button size="xs" variant="ghost" disabled={!s.up || busy} onPress={() => void helperAction('restart')}>Restart</Button>
+        <Button size="xs" variant="ghost" disabled={!s.up} onPress={() => void checkPermissions()}>Check permissions</Button>
       </Row>
+      {read(doctor) ? <Code block>{read(doctor)}</Code> : null}
       {busy ? <Text muted size="xs">Loading the speech models takes about 30 seconds.</Text> : null}
     </Stack>
   )
@@ -106,7 +108,8 @@ export default function Panel() {
   return (
     <Stack gap="md">
       {header}
-      <Card title="Dictation" description="How your voice gets in">
+      <Box border radius="md" padding="sm" direction="column" gap="md">
+        <Heading level={3}>Dictation</Heading>
         <Stack gap="md">
           <Select
             label="Dictation"
@@ -172,9 +175,10 @@ export default function Panel() {
           <Text muted size="xs">Input: {s.inputDevice || 'unknown'}</Text>
           <Button disabled={!local} onPress={() => void run('listen')}>Start dictation</Button>
         </Stack>
-      </Card>
+      </Box>
 
-      <Card title="Agent voice" description="How replies are read to you">
+      <Box border radius="md" padding="sm" direction="column" gap="md">
+        <Heading level={3}>Agent voice</Heading>
         <Stack gap="md">
           <Switch
             label="Short spoken-style replies from agents"
@@ -186,10 +190,8 @@ export default function Panel() {
           <Select label="Voice speed" value={speed} options={SPEEDS} onChange={(v) => void run(`speed ${v}`)} />
           <Button onPress={() => void run('stop')}>Shut up</Button>
         </Stack>
-      </Card>
+      </Box>
 
-      <Button variant="ghost" onPress={() => void checkPermissions()}>Check permissions</Button>
-      {read(doctor) ? <Code block>{read(doctor)}</Code> : null}
       <Text muted size="xs">Connected session: {s.following}</Text>
     </Stack>
   )

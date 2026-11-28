@@ -3,6 +3,9 @@
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HELPER="$ROOT/helper"
+# Outside the plugin folder: Orca rejects symlinks in installed plugin content, and a venv is full of them.
+export UV_PROJECT_ENVIRONMENT="$HOME/.voice-bridge/venv"
+mkdir -p "$HOME/.voice-bridge"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 problems=0
 

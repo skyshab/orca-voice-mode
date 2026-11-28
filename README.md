@@ -32,9 +32,9 @@ installs anything with Homebrew.
 |---|---|---|---|
 | `uv` (Homebrew) | Builds and runs the Python helper. | small | Homebrew |
 | `ffmpeg` (Homebrew) | Its `ffplay` plays the spoken replies. | about 0.1 GB, plus its dependencies | Homebrew |
-| Python 3.12 and packages | The helper, plus the MLX speech libraries. `uv` fetches Python itself. | about 1.4 GB | `helper/.venv` in the plugin folder |
+| Python 3.12 and packages | The helper, plus the MLX speech libraries. `uv` fetches Python itself. | about 1.4 GB | `~/.voice-bridge/venv`, outside the plugin folder |
 | Kokoro (`Kokoro-82M`) | The voice that reads replies aloud. | about 0.3 GB | Hugging Face cache, `~/.cache/huggingface` |
-| A small spaCy English model | Kokoro uses it to split text into words. It downloads from GitHub on first use. | about 15 MB | `helper/.venv` |
+| A small spaCy English model | Kokoro uses it to split text into words. It downloads from GitHub on first use. | about 15 MB | `~/.voice-bridge/venv` |
 | Parakeet (`parakeet-tdt-0.6b-v2`) | Local dictation (the default). | about 2.3 GB | Hugging Face cache |
 | Whisper (`large-v3-turbo`) | Optional local dictation, better with unusual words. It downloads the first time you choose it. | about 1.5 GB | Hugging Face cache |
 
@@ -48,13 +48,13 @@ causes are no internet connection, no Homebrew, or too little disk space. You ca
 from the plugin folder:
 
 1. Install the tools: `brew install uv ffmpeg`.
-2. Build the Python environment: `cd helper && uv sync`.
-3. Download the models: `uv run python src/fetch_models.py` (still in `helper`).
+2. Build the Python environment: `export UV_PROJECT_ENVIRONMENT=~/.voice-bridge/venv`, then `cd helper && uv sync`.
+3. Download the models: `uv run python src/fetch_models.py` (still in `helper`, same `export`).
 4. Link the commands: `ln -sfn "$PWD/../bin/voice" ~/.local/bin/voice` and the same for `voice-hook`.
 5. Start the helper: `voice start`, then run `voice doctor`.
 
 If a model download stops halfway, run step 3 again. It picks up where it left off. To free the space later,
-delete `helper/.venv` and the model folders in `~/.cache/huggingface/hub` (their names start with `models--mlx-community`).
+delete `~/.voice-bridge/venv` and the model folders in `~/.cache/huggingface/hub` (their names start with `models--mlx-community`).
 
 ## Permissions macOS asks for
 

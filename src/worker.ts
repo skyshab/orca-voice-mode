@@ -63,7 +63,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const VOICE = path.join(ROOT, 'bin', 'voice')
 const SETUP_LOG = path.join(os.homedir(), '.voice-bridge', 'setup.log')
 let setupFailed = false
-const needsSetup = (): boolean => !fs.existsSync(path.join(ROOT, 'helper', '.venv'))
+const needsSetup = (): boolean => !fs.existsSync(path.join(os.homedir(), '.voice-bridge', 'venv'))
 
 function tail(file: string, lines: number): string {
   try {

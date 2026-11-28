@@ -100,8 +100,10 @@ def main(args):
         if not running():
             if args[:2] == ["mode", "wispr"] or args[0] == "quit":
                 # Safety valve: give right Option back to Wispr Flow even if the helper is not running.
-                cli = "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
-                if os.path.exists(cli):
+                cli = next((p for p in ("/Applications/Karabiner-Elements.app/Contents/Helpers/karabiner_cli",
+                            "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli")
+                            if os.path.exists(p)), "")
+                if cli:
                     subprocess.run([cli, "--set-variables", '{"voice_local":0}'])
                 print("The helper is not running. Right Option is back with Wispr Flow.")
                 return

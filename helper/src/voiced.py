@@ -39,7 +39,10 @@ LOG = os.path.join(DATA, "voice-log.jsonl")
 os.environ["PATH"] = os.pathsep.join(["/opt/homebrew/bin", "/usr/local/bin", os.path.expanduser("~/.local/bin"), os.environ.get("PATH", "")])
 SOCK = os.path.join(DATA, "control.sock")
 SR = 16000
-KARABINER = "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
+# Newer Karabiner-Elements keeps its command line tool inside the app; older ones put it under /Library.
+KARABINER = next((p for p in ("/Applications/Karabiner-Elements.app/Contents/Helpers/karabiner_cli",
+                              "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli")
+                  if os.path.exists(p)), "")
 SETTINGS = os.path.join(DATA, "settings.json")
 
 state = {"mode": "wispr", "stt": "parakeet", "muted": False, "recording": False, "held": False, "live": False, "current": None, "enter": False, "cue": "Tink", "silence": 2.0, "conversation": False, "mic": "default", "speed": 1.15, "speaker": "af_bella", "pause": True, "key": "f18"}
@@ -80,10 +83,20 @@ def save_settings():
 def sync_karabiner(local):
     """Tell Karabiner whether local mode is on. Its rule turns right Option into F18 only then,
     so the same key or remote button reaches Wispr Flow in wispr mode and this helper in local mode."""
-    if not os.path.exists(KARABINER):
+    if not KARABINER:
         return
     subprocess.run([KARABINER, "--set-variables", json.dumps({"voice_local": 1 if local else 0})],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+closing = threading.Event()
+
+
+def keep_karabiner_in_sync():
+    """Karabiner forgets its variables whenever its config reloads or it restarts, which would turn the
+    remote and right Option off without a word. Say it again every few seconds."""
+    while not closing.wait(10):
+        sync_karabiner(state["mode"] == "local")
 
 
 MAX_TURNS = 10  # a hands-free conversation ends by itself after this many replies
@@ -757,6 +770,7 @@ def command(line):
     elif cmd == "status":
         pass
     elif cmd == "quit":
+        closing.set()
         sync_karabiner(False)  # give right Option back to Wispr Flow
         threading.Timer(0.3, lambda: os._exit(0)).start()
         return "quitting"
@@ -809,6 +823,7 @@ def main():
     except (ValueError, OSError):
         state["cue"] = build_tick("Tink")
     sync_karabiner(state["mode"] == "local")
+    threading.Thread(target=keep_karabiner_in_sync, daemon=True).start()
     if not a.no_hotkey:
         run_hotkey(a.key or state["key"])
 
@@ -821,6 +836,7 @@ def main():
     try:
         server.serve_forever()
     finally:
+        closing.set()
         sync_karabiner(False)
         if os.path.exists(SOCK):
             os.remove(SOCK)
